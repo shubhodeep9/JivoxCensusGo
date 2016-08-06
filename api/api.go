@@ -4,6 +4,7 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	"github.com/headzoo/surf"
 	"log"
+	"strings"
 	"sync"
 )
 
@@ -26,7 +27,7 @@ func ScrapeDetails(val string) map[string]map[string]string {
 	detailed := make(map[string]map[string]string)
 	table.Find("tr").Each(func(i int, s *goquery.Selection) {
 		td := s.Find("td")
-		detailed[td.Eq(0).Text()] = map[string]string{
+		detailed[strings.TrimSpace(td.Eq(0).Text())] = map[string]string{
 			"2011": td.Eq(1).Text(),
 			"2001": td.Eq(2).Text(),
 		}
