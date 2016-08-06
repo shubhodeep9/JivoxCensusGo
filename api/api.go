@@ -1,6 +1,7 @@
 package api
 
 import (
+	"JivoxCensusGo/models"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/headzoo/surf"
 	"log"
@@ -8,18 +9,11 @@ import (
 	"sync"
 )
 
-type Census map[string]Details
-
-type Details struct {
-	Population string                       `json:"population"`
-	Increase   string                       `json:"increase"`
-	Area       string                       `json:"area"`
-	Density    string                       `json:"density"`
-	Sex        string                       `json:"sex"`
-	Literacy   string                       `json:"literacy"`
-	Detailed   map[string]map[string]string `json:"details"`
-}
-
+/*
+Function to scrape the details from individual state pages
+@params value of url string to be parsed
+@return a map having string keys of map having string keys of string
+*/
 func ScrapeDetails(val string) map[string]map[string]string {
 	bow := surf.NewBrowser()
 	bow.Open("http://www.census2011.co.in/" + val)
@@ -35,24 +29,34 @@ func ScrapeDetails(val string) map[string]map[string]string {
 	return detailed
 }
 
-func Scrape() Census {
+/*
+Function to scrape the Census data
+@return Census (A struct having all the required data types)
+@params null
+*/
+func Scrape() models.Census {
 	bow := surf.NewBrowser()
 	err := bow.Open("http://www.census2011.co.in/states.php")
 	if err != nil {
 		log.Fatal(err)
 	}
+	//Mutex wait group to wait till all the coroutines are completed
 	var wg sync.WaitGroup
 	table := bow.Find(".searchable")
-	census := make(Census)
+	census := make(models.Census)
 	table.Find("tr").Each(func(i int, s *goquery.Selection) {
+
 		wg.Add(1)
+		/*
+			The go routine used to concurrently all the pages in a single time
+		*/
 		go func() {
 			defer wg.Done()
 			detailed := make(map[string]map[string]string)
 			if val, exists := s.Find("td").Eq(1).Find("a").Attr("href"); exists {
 				detailed = ScrapeDetails(val)
 			}
-			census[s.Find("td").Eq(1).Text()] = Details{
+			census[s.Find("td").Eq(1).Text()] = models.Details{
 				Population: s.Find("td").Eq(2).Text(),
 				Increase:   s.Find("td").Eq(3).Text(),
 				Area:       s.Find("td").Eq(4).Text(),
